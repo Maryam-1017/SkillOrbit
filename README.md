@@ -1,107 +1,59 @@
-# SkillOrbit — AI-Powered Career Guidance Platform
+# SkillOrbit 🚀
 
-SkillOrbit is a Flask-based web application that helps students, fresh graduates, and professionals make informed career decisions. It uses a trained Machine Learning model to analyze a user's skills and recommend the most suitable career paths, identify skill gaps, and generate personalized learning roadmaps.
+> An AI-powered career guidance platform that helps users discover career paths, identify skill gaps, take adaptive skill assessments, simulate live careers, and generate personalized learning roadmaps — all powered by machine learning and real O*NET occupational data.
 
 ---
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
+- [Overview](#overview)
 - [Features](#features)
-- [Machine Learning Model](#machine-learning-model)
 - [Project Structure](#project-structure)
-- [Installation & Setup](#installation--setup)
-- [How to Run](#how-to-run)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the Application](#running-the-application)
+- [Modules Explained](#modules-explained)
+  - [Backend (Flask API)](#backend-flask-api)
+  - [Machine Learning (ML)](#machine-learning-ml)
+  - [Frontend](#frontend)
+  - [Data](#data)
+  - [Models](#models)
+  - [Scripts](#scripts)
+- [Data Sources](#data-sources)
+- [ML Pipeline](#ml-pipeline)
 - [API Endpoints](#api-endpoints)
-- [Technologies Used](#technologies-used)
+- [File Reference](#file-reference)
 
 ---
 
-## Project Overview
+## Overview
 
-Career decision-making is one of the most challenging tasks for students and professionals. SkillOrbit solves this by combining Machine Learning, Natural Language Processing, and data analytics into a single platform. A user simply enters their skills or uploads their resume — the system handles everything else.
+SkillOrbit is a full-stack web application that combines machine learning with occupational science to give users a 360° view of their career trajectory. A user can:
 
-The platform covers four core modules:
+1. Input their current skills or upload a resume.
+2. Receive AI-generated career recommendations.
+3. See exactly which skills they are missing for their target role (skill gap analysis).
+4. Take an adaptive skill test that adjusts question difficulty based on their responses.
+5. Simulate what a day/week in their target career looks like.
+6. Generate a step-by-step learning roadmap to close their skill gaps.
 
-1. **Career Recommendation** — ML model predicts best-fit careers based on user skills
-2. **Skill Gap Analysis** — identifies which skills the user has and which are missing
-3. **Learning Roadmap** — generates a phase-by-phase learning plan for any career
-4. **Career Simulator** — shows salary projections and market trends for a chosen career
+The backend is built with **Flask**, the ML layer uses **scikit-learn** with models trained on O*NET data, and the frontend is pure HTML/CSS/JavaScript.
 
 ---
 
 ## Features
 
-- **Resume Analyzer** — upload a PDF or DOCX resume; the system extracts skills automatically using NLP (spaCy + fuzzy matching)
-- **ML-based Career Recommendations** — trained Random Forest classifier predicts career match with confidence percentage
-- **Skill Gap Analysis** — exact and partial skill matching against required skills for any career
-- **Personalized Roadmap Generator** — phase-by-phase learning path based on current skill level
-- **Career Market Simulator** — 5-year salary projection and demand index based on market trends
-- **Petri Net Simulation** — animated visualization of the resume analysis workflow
-- **Retrain Endpoint** — `/api/train-model` allows retraining the ML model on demand
-
----
-
-## Machine Learning Model
-
-### Algorithm
-**Random Forest Classifier** (`sklearn.ensemble.RandomForestClassifier`)
-
-### Why Random Forest?
-- Handles high-dimensional binary feature vectors well
-- Robust against overfitting with many trees
-- Returns `predict_proba()` — confidence scores for every career class
-- Works well even with synthetically generated training data
-
-### Training Pipeline
-
-```
-careers.csv (60 careers, ~300 unique skills)
-        ↓
-Synthetic Data Generation (6000 labeled samples)
-  - 30 core samples per career (full skill set)
-  - 50 partial samples per career (50–85% of skills)
-  - 20 noise samples per career (skills + random extras)
-        ↓
-Feature Encoding — MultiLabelBinarizer
-  skills list → binary vector  e.g. ["python","sql"] → [0,1,0,...,1,0]
-        ↓
-Train / Test Split — 80% train, 20% test (stratified)
-        ↓
-model.fit(X_train, y_train)  ← actual ML training
-        ↓
-Evaluation — accuracy_score + classification_report
-        ↓
-joblib.dump() → models/career_model.pkl
-               models/mlb.pkl
-```
-
-### Evaluation Metrics
-| Metric | Value |
-|--------|-------|
-| Accuracy | ~98% on test set |
-| Evaluation method | Train/test split (stratified) |
-| Report | Per-career precision, recall, F1-score |
-
-### At Prediction Time (Flask)
-```
-User skills input
-      ↓
-MultiLabelBinarizer.transform()   ← same encoder used in training
-      ↓
-model.predict_proba()             ← confidence % for each career
-      ↓
-Top 5 careers ranked by confidence
-```
-
-### Model Files
-The trained model is **not stored in the repository**. It is generated locally by running the training script. This is standard practice — code is versioned, models are generated fresh.
-
-```
-models/                  ← auto-created by train_model.py
-├── career_model.pkl     ← trained Random Forest
-└── mlb.pkl              ← fitted MultiLabelBinarizer
-```
+| Feature | Description |
+|---|---|
+| **Career Recommender** | Recommends best-fit careers based on a user's current skill set |
+| **Skill Gap Analysis** | Compares user skills against O*NET occupational skill requirements |
+| **Adaptive Skill Test** | Dynamically adjusts question difficulty using a trained difficulty model |
+| **Resume Analyzer** | Extracts skills from an uploaded resume and maps them to careers |
+| **Career Simulator** | Simulates live career scenarios to help users visualize a role |
+| **Roadmap Generator** | Produces a personalized, step-by-step learning roadmap |
+| **Career Advisor UI** | Interactive advisor page for guided career exploration |
 
 ---
 
@@ -109,46 +61,104 @@ models/                  ← auto-created by train_model.py
 
 ```
 SkillOrbit/
-├── backend/
-│   ├── app.py               # Flask application — all API routes
-│   └── resume_analyzer.py   # NLP-based resume parsing + Petri Net
-├── data/
-│   └── careers.csv          # 60 careers with required skills, salary, demand
-├── frontend/
-│   ├── index.html           # Landing page
-│   ├── advisor.html         # Career advisor (skill input + recommendations)
-│   ├── resume_analyzer.html # Resume upload and analysis
-│   ├── roadmap.html         # Learning roadmap viewer
-│   └── nav.css              # Shared navigation styles
-├── ML/
-│   ├── train_model.py       # Training script — run this first
-│   ├── recommender.py       # Loads trained model, returns career matches
-│   ├── skill_gap.py         # Skill gap and partial match analysis
-│   ├── roadmap_generator.py # Phase-by-phase roadmap generation
-│   └── career_simulator.py  # Salary projection and market trend simulation
-├── models/                  # Auto-generated (not in repo)
-│   ├── career_model.pkl
-│   └── mlb.pkl
-├── requirements.txt
-└── README.md
+│
+├── backend/                    # Flask REST API
+│   ├── __init__.py
+│   ├── app.py                  # Main Flask application & route definitions
+│   ├── resume_analyzer.py      # Resume parsing and skill extraction logic
+│   └── skill_test.py           # Skill test question serving and scoring logic
+│
+├── ML/                         # Machine learning modules
+│   ├── __init__.py
+│   ├── config.py               # Shared ML configuration (paths, constants)
+│   ├── shared.py               # Shared utilities used across ML modules
+│   ├── recommender.py          # Career recommendation model logic
+│   ├── skill_gap.py            # Skill gap computation between user and career
+│   ├── roadmap_generator.py    # Generates learning roadmaps from skill gaps
+│   ├── career_simulator.py     # Career simulation scenario engine
+│   ├── live_simulations.py     # Live/real-time simulation support
+│   ├── train_model.py          # Training script for the career recommendation model
+│   └── train_difficulty_model.py  # Training script for question difficulty classifier
+│
+├── frontend/                   # HTML/CSS/JS user interface
+│   ├── index.html              # Landing / home page
+│   ├── advisor.html            # Career advisor interactive page
+│   ├── roadmap.html            # Roadmap visualization page
+│   ├── skill_test.html         # Skill assessment test page
+│   ├── resume_analyzer.html    # Resume upload and analysis page
+│   ├── nav.css                 # Shared navigation styles
+│   ├── simulations.js          # JavaScript for career simulations
+│   ├── simulations.css         # Styles for simulations page
+│   └── static/
+│       └── simulations.css     # Static copy of simulation styles
+│
+├── data/                       # Raw and processed data files
+│   ├── careers.csv             # Career metadata (titles, descriptions, skills)
+│   ├── questions_metadata.csv  # Skill test questions with metadata
+│   └── onet/                   # O*NET occupational database exports
+│       ├── Occupation Data.txt     # Job titles and SOC codes
+│       ├── Skills.txt              # Skill requirements per occupation
+│       ├── Knowledge.txt           # Knowledge requirements per occupation
+│       └── Technology Skills.txt   # Technology skills per occupation
+│
+├── models/                     # Serialized (trained) ML model artifacts
+│   ├── career_model.pkl        # Trained career recommendation classifier
+│   ├── mlb.pkl                 # MultiLabelBinarizer for skill encoding
+│   ├── selector.pkl            # Feature selector used during training
+│   └── metrics.json            # Model evaluation metrics (accuracy, F1, etc.)
+│
+├── scripts/                    # Standalone utility scripts
+│   └── predict_difficulty.py   # Script to predict/assign difficulty to questions
+│
+├── requirements.txt            # Python package dependencies
+└── README.md                   # This file
 ```
 
 ---
 
-## Installation & Setup
+## Technology Stack
+
+### Backend
+- **Python 3.11**
+- **Flask** — lightweight REST API framework
+- **Gunicorn** — production WSGI server
+- **spaCy + en_core_web_sm** — NLP for resume parsing and entity extraction
+- **NLTK** — natural language text processing
+- **PyMuPDF (fitz) / pdfplumber** — PDF resume reading
+
+### Machine Learning
+- **scikit-learn** — career recommendation classifier, feature selection, model training
+- **NumPy & pandas** — data wrangling and numerical computation
+- **SciPy** — scientific computing support
+
+### Frontend
+- **HTML5 / CSS3 / Vanilla JavaScript** — no frontend framework required
+- All pages are self-contained; served directly by Flask's static file handler
+
+### Data
+- **O*NET Online** — occupational skills, knowledge, and technology requirements
+- **CSV** — careers database and question metadata
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Python 3.9 or higher
-- pip
 
-### Step 1 — Clone the repository
+- Python **3.11** or higher
+- `pip` package manager
+- (Optional) A virtual environment tool such as `venv`
+
+### Installation
+
+**1. Clone the repository**
 
 ```bash
 git clone https://github.com/your-username/SkillOrbit.git
 cd SkillOrbit
 ```
 
-### Step 2 — Create and activate virtual environment
+**2. Create and activate a virtual environment**
 
 ```bash
 python -m venv .venv
@@ -156,409 +166,255 @@ python -m venv .venv
 # Windows
 .venv\Scripts\activate
 
-# Mac / Linux
+# macOS / Linux
 source .venv/bin/activate
 ```
 
-### Step 3 — Install dependencies
+**3. Install dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4 — Download spaCy language model
+**4. Download the spaCy language model** (if not already bundled)
 
 ```bash
 python -m spacy download en_core_web_sm
 ```
 
-### Step 5 — Train the ML model
+### Running the Application
 
-This step generates the `models/` folder with the trained classifier.
-
-```bash
-python ML/train_model.py
-```
-
-Expected output:
-```
-Training model...
-Done! Accuracy: 98.5%
-Saved to models/career_model.pkl
-```
-
----
-
-## How to Run
+**Development mode (Flask built-in server)**
 
 ```bash
 python backend/app.py
 ```
 
-Open your browser and go to: `http://127.0.0.1:5000`
+The app will start at `http://127.0.0.1:5000` by default.
+
+**Production mode (Gunicorn)**
+
+```bash
+gunicorn -w 4 backend.app:app
+```
+
+**Retraining the ML models** (optional — pre-trained `.pkl` files are already in `models/`)
+
+```bash
+# Retrain the career recommendation model
+python ML/train_model.py
+
+# Retrain the question difficulty model
+python ML/train_difficulty_model.py
+```
+
+---
+
+## Modules Explained
+
+### Backend (Flask API)
+
+#### `backend/app.py`
+The entry point of the application. Defines all HTTP routes and wires together the ML modules and frontend. Handles requests for career recommendations, skill tests, resume analysis, roadmap generation, and simulations.
+
+#### `backend/resume_analyzer.py`
+Handles resume file uploads (PDF format). Uses **spaCy** and **NLTK** to extract named entities, action verbs, and technical keywords, then maps those to known skills in the O*NET skill taxonomy. Returns a structured list of identified skills.
+
+#### `backend/skill_test.py`
+Serves adaptive skill-test questions to the frontend. Selects questions based on the user's current skill domain and dynamically adjusts difficulty based on prior answers (using the difficulty model from `models/`). Scores and returns results at the end of the test.
+
+---
+
+### Machine Learning (ML)
+
+#### `ML/config.py`
+Central configuration file. Defines file paths to data and model artifacts, hyperparameters, and any shared constants used across ML modules. Keeping configuration in one place makes it easy to adapt the project to new environments.
+
+#### `ML/shared.py`
+Utility functions shared across multiple ML modules — for example, loading the trained models from disk, encoding skill lists with the `MultiLabelBinarizer`, or computing cosine similarity between skill vectors.
+
+#### `ML/recommender.py`
+The core career recommendation engine. Loads the trained `career_model.pkl` and `mlb.pkl`. Given a list of user skills, it encodes them and runs prediction to return a ranked list of career matches with confidence scores.
+
+#### `ML/skill_gap.py`
+Compares a user's current skill set against the O*NET skill requirements for a chosen career. Returns the skills the user already has, the skills they are missing, and optionally a percentage match score.
+
+#### `ML/roadmap_generator.py`
+Takes the output of `skill_gap.py` (the list of missing skills) and generates a prioritized, step-by-step learning roadmap. Skills are ordered by importance to the target role, and each step may include suggested learning resources or categories.
+
+#### `ML/career_simulator.py`
+Generates narrative career simulation scenarios. Given a target career and a user's profile, it produces a realistic description of what work in that role looks like — tasks, tools used, daily schedule, and challenges — to help users make informed decisions.
+
+#### `ML/live_simulations.py`
+Extends `career_simulator.py` with real-time or streaming simulation support. Useful for progressively rendering long simulation results in the browser without blocking the UI.
+
+#### `ML/train_model.py`
+Offline training script for the career recommendation model. Reads `data/careers.csv` and the O*NET data files, encodes skill sets using a `MultiLabelBinarizer`, trains a classifier (e.g. Random Forest or similar), and serializes the trained model and binarizer to `models/`.
+
+#### `ML/train_difficulty_model.py`
+Offline training script for the question-difficulty classifier. Reads `data/questions_metadata.csv`, extracts features (question length, domain, user performance history, etc.), and trains a model that predicts difficulty level (easy / medium / hard). Used by the adaptive skill test.
+
+---
+
+### Frontend
+
+All frontend pages are plain HTML with embedded or linked CSS/JS — no build step required.
+
+| File | Purpose |
+|---|---|
+| `frontend/index.html` | Landing page — introduces SkillOrbit and directs users to features |
+| `frontend/advisor.html` | Interactive career advisor — users input skills and get recommendations |
+| `frontend/roadmap.html` | Displays the personalized learning roadmap in a visual timeline |
+| `frontend/skill_test.html` | Hosts the adaptive skill assessment; communicates with the backend via fetch/AJAX |
+| `frontend/resume_analyzer.html` | Resume upload form; sends PDF to backend and displays extracted skills |
+| `frontend/simulations.js` | JavaScript logic for rendering career simulations in the browser |
+| `frontend/nav.css` | Shared navigation bar styles used across all pages |
+| `frontend/simulations.css` | Styling for the simulation display panels |
+
+---
+
+### Data
+
+#### `data/careers.csv`
+Contains career records with fields such as career title, description, required skills, and (optionally) salary range or growth outlook. Used to train the recommendation model and populate the frontend career list.
+
+#### `data/questions_metadata.csv`
+A dataset of skill-test questions with metadata including question text, skill domain, correct answer, and initial difficulty rating. Used to train the difficulty model and to serve questions during the adaptive test.
+
+#### `data/onet/`
+Four files exported from the **O*NET database** (publicly available from the U.S. Department of Labor):
+
+| File | Contents |
+|---|---|
+| `Occupation Data.txt` | SOC codes, occupation titles, and descriptions |
+| `Skills.txt` | Skill importance/level scores per occupation |
+| `Knowledge.txt` | Knowledge area importance/level scores per occupation |
+| `Technology Skills.txt` | Software and technology tools used per occupation |
+
+---
+
+### Models
+
+Pre-trained model artifacts stored in `models/`. These are loaded at startup and do not need to be retrained unless the underlying data changes.
+
+| File | Description |
+|---|---|
+| `career_model.pkl` | Trained classifier that maps skill vectors to career recommendations |
+| `mlb.pkl` | Fitted `MultiLabelBinarizer` for encoding lists of skills into binary feature vectors |
+| `selector.pkl` | Fitted feature selector (e.g. `SelectKBest`) applied after encoding |
+| `metrics.json` | Evaluation results from the last training run (accuracy, precision, recall, F1) |
+
+---
+
+### Scripts
+
+#### `scripts/predict_difficulty.py`
+A standalone utility script that runs the trained difficulty model over a set of questions and outputs the predicted difficulty level for each. Useful for pre-labelling new questions before adding them to `questions_metadata.csv`.
+
+---
+
+## Data Sources
+
+- **O*NET Online** (https://www.onetcenter.org/database.html) — Open occupational database maintained by the U.S. Department of Labor. Provides standardized skill, knowledge, and technology requirement data for hundreds of occupations.
+- **`careers.csv`** — Custom dataset compiled from public career information to supplement O*NET with richer descriptions and structured skill tags.
+- **`questions_metadata.csv`** — Custom question bank created for the adaptive skill assessment.
+
+---
+
+## ML Pipeline
+
+```
+Raw O*NET Data + careers.csv
+        │
+        ▼
+  Data Preprocessing
+  (pandas, cleaning, merging)
+        │
+        ▼
+  Skill Encoding
+  (MultiLabelBinarizer → mlb.pkl)
+        │
+        ▼
+  Feature Selection
+  (SelectKBest → selector.pkl)
+        │
+        ▼
+  Model Training
+  (Classifier → career_model.pkl)
+        │
+        ▼
+  Evaluation → metrics.json
+        │
+        ▼
+  Flask API loads models at startup
+        │
+        ▼
+  User submits skills via frontend
+        │
+        ▼
+  recommender.py → ranked career list
+        │
+        ▼
+  skill_gap.py → missing skills
+        │
+        ▼
+  roadmap_generator.py → learning plan
+```
 
 ---
 
 ## API Endpoints
+
+All endpoints are served by `backend/app.py`.
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/recommend` | Get top 5 career matches from skills |
-| POST | `/api/skill-gap` | Get skill gap for a specific career |
-| POST | `/api/roadmap` | Get learning roadmap for a career |
-| GET  | `/api/careers` | List all available careers |
-| POST | `/api/career-simulation` | Get salary projection and market trend |
-| POST | `/api/analyze-resume` | Upload resume and extract skills |
-| POST | `/api/petri-simulate` | Run Petri Net workflow simulation |
-| POST | `/api/train-model` | Retrain the ML model on demand |
-| POST | `/api/prioritize-skills` | Prioritize missing skills by frequency |
+|---|---|---|
+| `GET` | `/` | Serves the landing page (`index.html`) |
+| `POST` | `/recommend` | Accepts a JSON list of user skills, returns ranked career recommendations |
+| `POST` | `/skill-gap` | Accepts user skills + target career, returns missing skills and match % |
+| `POST` | `/roadmap` | Accepts missing skills, returns an ordered learning roadmap |
+| `POST` | `/analyze-resume` | Accepts a PDF file upload, returns extracted skills |
+| `GET` | `/skill-test/question` | Returns the next adaptive test question for the user |
+| `POST` | `/skill-test/answer` | Submits an answer, receives score update and next question |
+| `POST` | `/simulate` | Accepts a career name, returns a career simulation narrative |
 
-### Example Request — Career Recommendation
-
-```bash
-POST /api/recommend
-Content-Type: application/json
-
-{
-  "skills": ["Python", "Machine Learning", "TensorFlow", "NLP"]
-}
-```
-
-```json
-{
-  "user_skills": ["Python", "Machine Learning", "TensorFlow", "NLP"],
-  "matches": [
-    {
-      "career": "NLP Engineer",
-      "score": 94.5,
-      "salary_min": 85000,
-      "salary_max": 150000,
-      "demand_level": 9,
-      "market_trend": "Rising"
-    }
-  ]
-}
-```
+> **Note:** The exact endpoint signatures may vary. Check `backend/app.py` for the authoritative route definitions and expected request/response formats.
 
 ---
 
-## Technologies Used
+## File Reference
 
-| Category | Technology |
-|----------|------------|
-| Backend | Flask 3.x |
-| ML / Data | scikit-learn, pandas, numpy, joblib |
-| NLP | spaCy, rapidfuzz, PyMuPDF |
-| Frontend | HTML, CSS, JavaScript |
-| Resume Parsing | PyMuPDF (PDF), python-docx (DOCX) |
-| Model | Random Forest Classifier |
-| Feature Encoding | MultiLabelBinarizer |
-| Formal Modeling | Petri Net (custom implementation) |
-
----
-
-
-## Notes
-
-- The `models/` directory is excluded from the repository via `.gitignore`
-- Always run `python ML/train_model.py` after cloning before starting the server
-- The training script generates fresh model files each time it runs
-# SkillOrbit
-
-SkillOrbit is a Flask-based career guidance platform that helps users discover career paths from their skills, analyze missing skills, generate learning roadmaps, upload resumes for NLP-based analysis, run career simulations, and take skill tests.
-
-The project combines a Python/Flask backend, plain HTML/CSS/JavaScript frontend pages, CSV/O*NET data, scikit-learn models, resume parsing, and several simulation models used for the Simulation and Modeling workflow.
-
-## Features
-
-- Career recommendations from manually entered skills
-- Resume analyzer for PDF/DOCX resumes with skill extraction
-- Skill gap analysis with exact and partial skill matching
-- Personalized learning roadmaps by career and current skill level
-- Career market simulation with salary, demand, automation risk, and growth projections
-- Live simulation panels:
-  - Petri net resume/workflow simulation
-  - Roadmap Petri net simulation
-  - Skill gap closure pipeline
-  - Career journey timeline
-  - Markov chain career progression
-  - Job market queue simulation
-- Skill test module with standard and adaptive quiz modes
-- Difficulty prediction for skill test questions
-- Career and quiz data stored in CSV files
-
-## Tech Stack
-
-| Area | Tools |
-| --- | --- |
-| Backend | Flask, Python |
-| Frontend | HTML, CSS, JavaScript, Bootstrap, Chart.js |
-| Machine learning | scikit-learn, pandas, numpy, joblib |
-| NLP and resume parsing | spaCy, RapidFuzz, PyMuPDF, python-docx |
-| Data | CSV, O*NET data files |
-| Models | Random Forest, TF-IDF pipelines, MultiLabelBinarizer |
-
-## Project Structure
-
-```text
+```
 SkillOrbit/
-|-- backend/
-|   |-- app.py                 # Flask app, page routes, and API endpoints
-|   |-- resume_analyzer.py     # Resume parsing, skill extraction, Petri net workflow
-|   |-- skill_test.py          # Skill test, adaptive testing, history, leaderboard
-|   `-- __init__.py
-|-- ML/
-|   |-- config.py              # Shared project/model/data paths
-|   |-- recommender.py         # Career recommendation logic
-|   |-- skill_gap.py           # Skill gap and match percentage logic
-|   |-- roadmap_generator.py   # Career roadmap generation
-|   |-- career_simulator.py    # Salary/demand/market simulations
-|   |-- live_simulations.py    # Petri, Markov, queue, and pipeline simulations
-|   |-- train_model.py         # Career model training script
-|   |-- train_difficulty_model.py
-|   `-- shared.py              # Shared salary, market, and career helpers
-|-- frontend/
-|   |-- index.html             # Home page
-|   |-- advisor.html           # Skill input and career recommendations
-|   |-- resume_analyzer.html   # Resume upload and analysis page
-|   |-- roadmap.html           # Learning roadmap page
-|   |-- skill_test.html        # Skill test page
-|   |-- nav.css
-|   |-- simulations.css
-|   |-- simulations.js
-|   `-- static/
-|       `-- simulations.css
-|-- data/
-|   |-- careers.csv            # Curated careers, skills, salary, demand, risk
-|   |-- questions_metadata.csv # Quiz question bank used by skill tests
-|   `-- onet/                  # O*NET source files
-|-- models/
-|   |-- career_model.pkl       # Generated/trained career model
-|   |-- mlb.pkl                # Generated skill encoder
-|   |-- selector.pkl           # Generated feature selector
-|   `-- metrics.json           # Training metrics
-|-- scripts/
-|   `-- predict_difficulty.py
-|-- requirements.txt
-`-- README.md
+├── backend/app.py                   ← Flask app entry point
+├── backend/resume_analyzer.py       ← PDF/resume skill extractor
+├── backend/skill_test.py            ← Adaptive test question logic
+├── ML/config.py                     ← Paths and constants
+├── ML/shared.py                     ← Shared utilities
+├── ML/recommender.py                ← Career recommendation inference
+├── ML/skill_gap.py                  ← Skill gap computation
+├── ML/roadmap_generator.py          ← Learning roadmap construction
+├── ML/career_simulator.py           ← Career scenario generator
+├── ML/live_simulations.py           ← Streaming simulation support
+├── ML/train_model.py                ← Train career model (run offline)
+├── ML/train_difficulty_model.py     ← Train difficulty model (run offline)
+├── frontend/index.html              ← Home page
+├── frontend/advisor.html            ← Career advisor UI
+├── frontend/roadmap.html            ← Roadmap display UI
+├── frontend/skill_test.html         ← Skill test UI
+├── frontend/resume_analyzer.html    ← Resume upload UI
+├── frontend/simulations.js          ← Simulation JS logic
+├── data/careers.csv                 ← Career dataset
+├── data/questions_metadata.csv      ← Question bank
+├── data/onet/*.txt                  ← O*NET occupational data
+├── models/career_model.pkl          ← Trained recommendation model
+├── models/mlb.pkl                   ← Skill binarizer
+├── models/selector.pkl              ← Feature selector
+├── models/metrics.json              ← Training metrics
+├── scripts/predict_difficulty.py    ← Difficulty labelling utility
+└── requirements.txt                 ← Python dependencies
 ```
 
-## Data and Models
+---
 
-SkillOrbit uses two main data sources:
-
-- `data/careers.csv`: curated career records with required skills, salary range, demand level, automation risk, competition level, job type, market trend, and salary growth rate.
-- `data/onet/`: O*NET occupation, skills, knowledge, and technology skill files used by the career model and roadmap logic.
-
-The current career model artifacts live in `models/`:
-
-- `career_model.pkl`
-- `mlb.pkl`
-- `selector.pkl`
-- `metrics.json`
-
-The current `metrics.json` reports:
-
-- Top-1 accuracy: 83.3%
-- Top-5 accuracy: 93.54%
-- Careers: 911
-- Skill features after selection: 163
-- Source: O*NET 29.0
-
-If model files are missing, regenerate them with:
-
-```bash
-python ML/train_model.py
-```
-
-## Setup
-
-### 1. Create a virtual environment
-
-```bash
-python -m venv .venv
-```
-
-Activate it:
-
-```bash
-.venv\Scripts\activate
-```
-
-On macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-The requirements file includes the spaCy English model URL. If spaCy cannot load the model, run:
-
-```bash
-python -m spacy download en_core_web_sm
-```
-
-### 3. Train or refresh models when needed
-
-Career recommendation model:
-
-```bash
-python ML/train_model.py
-```
-
-Question difficulty model:
-
-```bash
-python ML/train_difficulty_model.py
-```
-
-Note: `ML/train_difficulty_model.py` expects `data/skill_test_dataset.csv`. The running app can still use `data/questions_metadata.csv` for tests if that metadata file already exists.
-
-## Run the App
-
-```bash
-python backend/app.py
-```
-
-Then open:
-
-```text
-http://127.0.0.1:5000
-```
-
-## Pages
-
-| Route | Page |
-| --- | --- |
-| `/` | Home page |
-| `/advisor` | Career advisor from entered skills |
-| `/roadmap` | Career learning roadmap |
-| `/resume-analyzer` | Resume upload and analysis |
-| `/skill-test` | Skill quiz and adaptive testing |
-
-## API Endpoints
-
-### Career and Skills
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| POST | `/api/recommend` | Return top career matches for a list of skills |
-| POST | `/api/skill-gap` | Return exact, partial, and missing skills for a career |
-| GET | `/api/careers` | Return grouped career list |
-| POST | `/api/roadmap` | Generate a roadmap for a selected career |
-| POST | `/api/prioritize-skills` | Prioritize missing skills across career matches |
-| POST | `/api/train-model` | Retrain the career recommendation model |
-
-### Resume Analyzer
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| POST | `/api/analyze-resume` | Upload a PDF/DOCX resume and extract skills, contact info, matches, and gaps |
-
-### Simulations
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| POST | `/api/petri-simulate` | Resume analyzer Petri net workflow |
-| POST | `/api/roadmap-simulate` | Roadmap Petri net phase simulation |
-| POST | `/api/career-journey-simulate` | Year-by-year career journey simulation |
-| POST | `/api/skill-gap-simulate` | Skill gap closure pipeline simulation |
-| POST | `/api/markov-simulate` | Markov chain career progression |
-| POST | `/api/queue-simulate` | Job market applicant queue simulation |
-| POST | `/api/skill-extraction-simulate` | Skill extraction pipeline animation data |
-| POST | `/api/career-simulation` | Salary, demand, risk, and market projection data |
-
-### Skill Tests
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/api/test/skills` | List skills available in the question bank |
-| POST | `/api/test/start` | Start a standard or adaptive skill test |
-| POST | `/api/test/submit` | Submit standard test answers |
-| GET | `/api/test/history` | Get saved test history |
-| GET | `/api/test/leaderboard` | Get leaderboard results |
-| POST | `/api/test/adaptive/answer` | Submit one adaptive answer and receive the next question |
-| POST | `/api/update-user-skills` | Mark skills as known or needing review |
-| POST | `/api/admin/predict-difficulty` | Predict difficulty for a question text |
-
-## Example Requests
-
-Career recommendation:
-
-```bash
-curl -X POST http://127.0.0.1:5000/api/recommend ^
-  -H "Content-Type: application/json" ^
-  -d "{\"skills\":[\"Python\",\"SQL\",\"Machine Learning\",\"Data Visualization\"]}"
-```
-
-Skill gap analysis:
-
-```json
-{
-  "user_skills": ["Python", "SQL", "Pandas"],
-  "career_match": {
-    "career": "Data Scientist",
-    "required_skills": ["Python", "SQL", "Machine Learning", "Statistics", "Pandas"]
-  }
-}
-```
-
-Start a skill test:
-
-```json
-{
-  "difficulty": "medium",
-  "skill": "Naive Bayes",
-  "num_questions": 10,
-  "adaptive": false
-}
-```
-
-## How Matching Works
-
-Career cards and skill gap analysis use shared match percentage logic:
-
-- Exact required skill match counts as `1.0`
-- Partial/related match counts as `0.65`
-- Score is calculated against the total required skills for the career
-- Score is capped at `99.0`
-
-This keeps the career card percentage and detailed skill gap percentage consistent.
-
-## Simulation Notes
-
-- Petri net simulations show step-by-step movement through workflow or roadmap states.
-- The skill gap pipeline shows how learning missing skills can increase the match percentage.
-- The Markov simulation estimates career stage transitions over time.
-- The queue simulation models applicants entering a job market, being screened, and receiving offers based on demand and competition.
-- The career simulator projects salary and demand trends for the selected career.
-
-## Common Commands
-
-```bash
-# Run the Flask app
-python backend/app.py
-
-# Train career recommendation model
-python ML/train_model.py
-
-# Train question difficulty model
-python ML/train_difficulty_model.py
-
-# Predict difficulty from script helper
-python scripts/predict_difficulty.py
-```
-
-## Notes for Development
-
-- The app uses `frontend/` as the Flask template folder and also serves it as static files.
-- `models/` contains generated artifacts and can become very large.
-- `data/test_results.csv` is created when users submit skill tests.
-- Resume parsing supports PDF and DOCX inputs.
-- Some optional O*NET files such as `Abilities.txt` and `Work Activities.txt` are used by training if present.
-- Keep model paths centralized through `ML/config.py`.
+*Built with Python, Flask, scikit-learn, spaCy, and O\*NET data.*

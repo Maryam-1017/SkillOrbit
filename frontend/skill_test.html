@@ -257,7 +257,7 @@
 
     <div class="result-actions">
       <button class="btn btn-primary" onclick="resetAll()">🔄 Try Again</button>
-      <button class="btn btn-secondary" id="btnRoadmap" onclick="goRoadmap()">🗺 Update Roadmap</button>
+      <button class="btn btn-secondary" id="btnRoadmap" onclick="goRoadmap()">🗺 View Roadmap</button>
     </div>
   </div>
 
@@ -306,6 +306,14 @@ const SUBJECTS = [
     prefixes: ["Data Science"]
   },
 ];
+
+/* Map skill-test subjects to roadmap career paths */
+const SUBJECT_TO_CAREER = {
+  ml:  "Data Scientists",
+  dsa: "Software Developers",
+  ai:  "Computer and Information Research Scientists",
+  ds:  "Data Scientists",
+};
 
 /* ── State ──────────────────────────────────────────────────────────────── */
 let questions    = [];
@@ -612,11 +620,18 @@ async function updateSkillsAndRedirect(skill) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ skill, action: "needs_review" }),
     });
-    window.location.href = "/roadmap";
-  } catch(e) { window.location.href = "/roadmap"; }
+  } catch(e) { /* continue to roadmap */ }
+  goRoadmap();
 }
 
-function goRoadmap() { window.location.href = "/roadmap"; }
+function goRoadmap() {
+  if (selectedSubject && SUBJECT_TO_CAREER[selectedSubject.id]) {
+    sessionStorage.setItem("selectedCareer", SUBJECT_TO_CAREER[selectedSubject.id]);
+  } else {
+    sessionStorage.removeItem("selectedCareer");
+  }
+  window.location.href = "/roadmap";
+}
 
 /* ── Utils ──────────────────────────────────────────────────────────────── */
 function resetAll() {

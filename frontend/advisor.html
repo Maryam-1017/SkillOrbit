@@ -555,19 +555,6 @@
                         <p class="mb-0">Loading market trends and salary projections…</p>
                     </div>
                     <div id="simContent" class="d-none">
-                        <!-- Live Career Journey Simulation -->
-                        <div class="sim-panel mb-4">
-                            <div class="sim-panel-title">Career Journey Timeline (Live)</div>
-                            <div class="journey-steps" id="journey-steps"></div>
-                        </div>
-
-                        <!-- Markov Career Path -->
-                        <div class="sim-panel mb-4">
-                            <div class="sim-panel-title">Markov Chain — Career Progression</div>
-                            <div class="sim-msg mb-2" id="markov-msg">Simulating career state transitions…</div>
-                            <div class="markov-states" id="markov-states"></div>
-                        </div>
-
                         <div class="row g-3 mb-4" id="simStatsRow"></div>
                         <div class="row g-3 mb-4">
                             <div class="col-lg-7">
@@ -963,39 +950,20 @@
             simModal.show();
 
             try {
-                const [marketRes, journeyRes, markovRes] = await Promise.all([
-                    fetch('/api/career-simulation', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ career: careerName, match_score: matchScore }),
-                    }),
-                    fetch('/api/career-journey-simulate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ career: careerName, match_score: matchScore }),
-                    }),
-                    fetch('/api/markov-simulate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ career: careerName, match_score: matchScore, user_skills: currentUserSkills }),
-                    }),
-                ]);
+                const marketRes = await fetch('/api/career-simulation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ career: careerName, match_score: matchScore }),
+                });
 
                 const data = await marketRes.json();
-                const journey = await journeyRes.json();
-                const markov = await markovRes.json();
 
                 if (!marketRes.ok) throw new Error(data.error || 'Simulation failed');
 
                 renderSimulationModal(data);
-                renderJourneySteps(journey.steps || []);
-                renderMarkovStates(markov);
 
                 document.getElementById('simLoading').classList.add('d-none');
                 document.getElementById('simContent').classList.remove('d-none');
-
-                await SimUtils.animateJourneySteps(journey.steps || [], { containerId: 'journey-steps', delay: 700 });
-                await SimUtils.animateMarkovPath(markov.path_log || [], { containerId: 'markov-states', delay: 650 });
 
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => buildSimulationCharts(data));
@@ -1004,27 +972,6 @@
                 simModal.hide();
                 alert('Simulation error: ' + err.message);
             }
-        }
-
-        function renderJourneySteps(steps) {
-            const el = document.getElementById('journey-steps');
-            if (!el) return;
-            el.innerHTML = steps.map(s => `
-                <div class="journey-step">
-                    <strong>${s.year} — ${s.title}</strong>
-                    <div style="font-size:0.8rem;color:var(--text-secondary);">${s.description}</div>
-                    <div style="font-size:0.75rem;color:var(--secondary);margin-top:4px;">
-                        Salary mid: ₨${(s.salary_mid || 0).toLocaleString()} · Demand: ${s.demand_index || '—'}
-                    </div>
-                </div>`).join('');
-        }
-
-        function renderMarkovStates(markov) {
-            const el = document.getElementById('markov-states');
-            if (!el) return;
-            el.innerHTML = (markov.states || []).map((s, i) =>
-                `<span class="markov-node" data-idx="${i}">${s}</span>${i < markov.states.length - 1 ? '<span class="markov-arrow">→</span>' : ''}`
-            ).join('');
         }
 
         function renderSimulationModal(data) {

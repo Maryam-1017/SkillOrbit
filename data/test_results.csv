@@ -1,0 +1,5 @@
+timestamp,user_id,score,difficulty,skill,questions_attempted
+2026-06-15T03:03:59.445364,anonymous,0.0,easy,Gradient Descent,1
+2026-06-15T03:29:45.820855,anonymous,60.0,all,all,5
+2026-06-15T03:32:54.930323,anonymous,16.7,all,all,6
+2026-06-15T03:41:07.704345,anonymous,0.0,all,all,1
